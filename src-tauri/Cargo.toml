@@ -1,0 +1,39 @@
+[package]
+name = "video-pipeline-gui"
+version = "0.1.0"
+description = "Desktop control tower & previewer for the video-pipeline CLI"
+edition = "2021"
+rust-version = "1.77"
+default-run = "video-pipeline-gui"
+
+# A lib crate holds the core (so `cargo test` exercises the gateway + scheduler +
+# argv units) and the thin bin just calls into it.
+[lib]
+name = "video_pipeline_gui_lib"
+crate-type = ["lib"]
+
+[[bin]]
+name = "video-pipeline-gui"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+jsonschema = "0.18"
+thiserror = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "process", "io-util", "time", "sync"] }
+
+[features]
+# Default release uses Tauri's custom protocol; kept explicit for clarity.
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true

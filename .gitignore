@@ -1,0 +1,14 @@
+# Frontend
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# OS / editor
+.DS_Store
+*.log
+.idea/
+.vscode/
