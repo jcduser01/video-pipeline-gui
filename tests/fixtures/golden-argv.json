@@ -1,0 +1,252 @@
+{
+  "_doc": "Golden argv contract (SADD \u00a72.4). Both the Rust resolve_argv (cargo test) and the Python reference assemble.py (contract_test.py) must reproduce every `argv` here. Regenerate with: python3 tests/verify_logic.py --write-golden",
+  "cases": [
+    {
+      "name": "project_init_min",
+      "task": "project.init",
+      "form_values": {
+        "identity": "dyson-hope"
+      },
+      "artifact_paths": {
+        "base": "work/base.mp4"
+      },
+      "argv": [
+        "video-pipeline",
+        "project-init",
+        "work/base.mp4",
+        "--identity",
+        "dyson-hope",
+        "--profile",
+        "reels-9x16"
+      ]
+    },
+    {
+      "name": "project_init_full",
+      "task": "project.init",
+      "form_values": {
+        "identity": "dyson-hope",
+        "profile": "feed-square-1x1",
+        "root": "/Users/x/Video/Projects",
+        "no_trim_filler": true
+      },
+      "artifact_paths": {
+        "base": "work/base.mp4"
+      },
+      "argv": [
+        "video-pipeline",
+        "project-init",
+        "work/base.mp4",
+        "--identity",
+        "dyson-hope",
+        "--profile",
+        "feed-square-1x1",
+        "--root",
+        "/Users/x/Video/Projects",
+        "--no-trim-filler"
+      ]
+    },
+    {
+      "name": "safezone_gen",
+      "task": "safezone.gen",
+      "form_values": {
+        "template": "design/template.png",
+        "key": "alpha"
+      },
+      "artifact_paths": {
+        "safezone.def": "work/safezone.json"
+      },
+      "argv": [
+        "video-pipeline",
+        "safezone-gen",
+        "design/template.png",
+        "--key",
+        "alpha",
+        "-o",
+        "work/safezone.json"
+      ]
+    },
+    {
+      "name": "reframe_dynamic",
+      "task": "reframe",
+      "form_values": {
+        "mode": "dynamic",
+        "tracker": "mediapipe"
+      },
+      "artifact_paths": {
+        "base": "work/base.mp4"
+      },
+      "argv": [
+        "video-pipeline",
+        "reframe",
+        "work/base.mp4",
+        "--profile",
+        "reels-9x16",
+        "--mode",
+        "dynamic",
+        "--tracker",
+        "mediapipe",
+        "-o",
+        "work/base.mp4"
+      ]
+    },
+    {
+      "name": "reframe_dryrun",
+      "task": "reframe",
+      "form_values": {
+        "dry_run": true
+      },
+      "artifact_paths": {
+        "base": "work/base.mp4"
+      },
+      "argv": [
+        "video-pipeline",
+        "reframe",
+        "work/base.mp4",
+        "--profile",
+        "reels-9x16",
+        "--mode",
+        "static",
+        "--tracker",
+        "opencv",
+        "--dry-run",
+        "-o",
+        "work/base.mp4"
+      ]
+    },
+    {
+      "name": "roughcut_tuned",
+      "task": "roughcut",
+      "form_values": {
+        "silence_gap": 0.8,
+        "pad_lead": 0.05,
+        "pad_tail": 0.2,
+        "no_trim_filler": true,
+        "online": true
+      },
+      "artifact_paths": {
+        "base": "work/base.mp4",
+        "roughcut.def": "work/roughcut.decision.yml"
+      },
+      "argv": [
+        "video-pipeline",
+        "roughcut",
+        "work/base.mp4",
+        "--no-trim-filler",
+        "--silence-gap",
+        "0.8",
+        "--pad-lead",
+        "0.05",
+        "--pad-tail",
+        "0.2",
+        "--online",
+        "-o",
+        "work/roughcut.decision.yml"
+      ]
+    },
+    {
+      "name": "roughcut_render",
+      "task": "roughcut.render",
+      "form_values": {
+        "dry_run": true
+      },
+      "artifact_paths": {
+        "base": "work/base.mp4",
+        "roughcut.def": "work/roughcut.decision.yml"
+      },
+      "argv": [
+        "video-pipeline",
+        "roughcut-render",
+        "work/roughcut.decision.yml",
+        "--dry-run",
+        "-i",
+        "work/base.mp4",
+        "-o",
+        "work/base.mp4"
+      ]
+    },
+    {
+      "name": "caption_define",
+      "task": "caption.define",
+      "form_values": {
+        "identity": "dyson-hope",
+        "karaoke": true,
+        "min_words": 1,
+        "max_words": 4
+      },
+      "artifact_paths": {
+        "base": "work/base.mp4",
+        "caption.def": "work/captions.yml",
+        "safezone.def": "work/safezone.json"
+      },
+      "argv": [
+        "video-pipeline",
+        "captions",
+        "work/base.mp4",
+        "--identity",
+        "dyson-hope",
+        "--profile",
+        "reels-9x16",
+        "--karaoke",
+        "--min-words",
+        "1",
+        "--max-words",
+        "4",
+        "-o",
+        "work/captions.yml",
+        "--safezone",
+        "work/safezone.json"
+      ]
+    },
+    {
+      "name": "caption_render",
+      "task": "caption.render",
+      "form_values": {
+        "identity": "sigil-zero",
+        "karaoke": true
+      },
+      "artifact_paths": {
+        "caption.def": "work/captions.yml",
+        "caption": "layers/captions.mov",
+        "safezone.def": "work/safezone.json"
+      },
+      "argv": [
+        "video-pipeline",
+        "captions-render",
+        "work/captions.yml",
+        "--identity",
+        "sigil-zero",
+        "--karaoke",
+        "-o",
+        "layers/captions.mov",
+        "--safezone",
+        "work/safezone.json"
+      ]
+    },
+    {
+      "name": "qc_strict",
+      "task": "safezone.qc",
+      "form_values": {
+        "strict": true,
+        "occlusion_frac": 0.5
+      },
+      "artifact_paths": {
+        "base": "work/base.mp4",
+        "caption": "layers/captions.mov",
+        "safezone.def": "work/safezone.json",
+        "qc.report": "review/qc-report.json"
+      },
+      "argv": [
+        "video-pipeline",
+        "qc",
+        "work/base.mp4",
+        "--strict",
+        "--occlusion-frac",
+        "0.5",
+        "--safezone",
+        "work/safezone.json",
+        "--report",
+        "review/qc-report.json"
+      ]
+    }
+  ]
+}

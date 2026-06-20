@@ -29,6 +29,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 META = ROOT / "schema" / "meta-schema.json"
 FIXTURE = HERE / "fixtures" / "sample-schema.json"
+GOLDEN = HERE / "fixtures" / "golden-argv.json"
 
 # Where the pipeline lives relative to this repo (sibling checkout). Overridable.
 PIPELINE_SRC = Path(
@@ -104,10 +105,37 @@ def check_cross_reference_invariants(s: dict):
         assert e["subcommand"].split()[0] in real_cli, f"export {e['id']} not a real cmd"
 
 
+def check_golden_argv() -> bool:
+    """Assert the pipeline's reference assembler reproduces the argv golden
+    contract (SADD §2.4). The Rust `resolve_argv` is pinned to the same file by
+    `command.rs::golden_argv_matches`, so the two assemblers cannot diverge.
+    Returns False (skip) when the pipeline is not importable."""
+    if not PIPELINE_SRC.exists():
+        return False
+    sys.path.insert(0, str(PIPELINE_SRC))
+    try:
+        from video_pipeline.schema import assemble  # type: ignore
+        from video_pipeline.schema.definition import build_schema  # type: ignore
+    except Exception:
+        return False
+    schema = build_schema()
+    golden = _load(GOLDEN)
+    for c in golden["cases"]:
+        got = assemble.resolve_argv(schema, c["task"], c["form_values"], c["artifact_paths"])
+        assert got == c["argv"], (
+            f"golden argv mismatch ({c['name']}):\n  exp {c['argv']}\n  got {got}"
+        )
+    return True
+
+
 # --- pytest entry points ---------------------------------------------------
 
 def test_meta_schema_self_valid():
     check_meta_schema_is_valid()
+
+
+def test_golden_argv_reference_matches():
+    check_golden_argv()  # no-op skip when the pipeline isn't importable
 
 
 def test_fixture_conforms_and_holds_invariants():
@@ -145,6 +173,8 @@ def main() -> int:
         print("contract: FAIL — fixture drifted from live emit", file=sys.stderr)
         return 1
     print("contract: live emit conforms + matches fixture")
+    if check_golden_argv():
+        print("contract: reference assembler reproduces the argv golden")
     return 0
 
 

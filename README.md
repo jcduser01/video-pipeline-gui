@@ -161,12 +161,32 @@ the same venv so its runtime deps come with it:
 ./.venv/bin/python tests/contract_test.py
 ```
 
+**Verify the core logic without a toolchain**
+
+`tests/verify_logic.py` is a stdlib-only port of the Rust scheduler and argv
+assembler that re-runs the same scenarios plus the argv golden contract, so the
+hard subsystems stay checkable on machines without `cargo`:
+
+```bash
+python3 tests/verify_logic.py                 # verify
+python3 tests/verify_logic.py --write-golden  # regenerate the golden from the reference
+```
+
+The argv golden (`tests/fixtures/golden-argv.json`) is the single contract both
+assemblers are pinned to — the Python reference via `contract_test.py`, the real
+Rust via `command.rs::golden_argv_matches` — so the resolved-command preview can
+never diverge from a command that actually runs.
+
 **Run the app**
 
 ```bash
 npm install
 npm run tauri dev
 ```
+
+For the full Mac-side build, test, and acceptance sequence (everything that needs
+a real toolchain, the webview, and the alpha spike, mapped to the DoD), follow
+[`docs/mac-build-runbook.md`](docs/mac-build-runbook.md).
 
 ## Repository topology
 

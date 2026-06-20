@@ -319,13 +319,16 @@ mod tests {
 
     #[test]
     fn missing_producer_is_a_plan_time_error() {
-        // caption.render needs safezone.def, but safezone.gen is disabled.
+        // safezone.gen is disabled, so safezone.def has no enabled producer.
+        // build_plan resolves bindings in declaration order, so the FIRST enabled
+        // consumer of safezone.def — caption.define — is the one that errors
+        // (caption.render also consumes it but is processed later).
         let on = enabled(&["project.init", "caption.define", "caption.render"]);
         let err = build_plan(&schema(), &on).unwrap_err();
         assert_eq!(
             err,
             PlanError::NoProducer {
-                task: "caption.render".into(),
+                task: "caption.define".into(),
                 channel: "safezone.def".into(),
             }
         );

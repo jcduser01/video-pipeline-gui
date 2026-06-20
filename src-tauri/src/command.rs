@@ -185,6 +185,33 @@ mod tests {
         assert!(!off.contains(&"--dry-run".to_string()));
     }
 
+    /// The argv golden contract (SADD §2.4). The same fixture is asserted in the
+    /// sandbox against the pipeline's reference `assemble.py` (tests/contract_test.py
+    /// + tests/verify_logic.py); this pins the *real* Rust `resolve_argv` to it, so
+    /// the two assemblers can never silently diverge. Regenerate with
+    /// `python3 tests/verify_logic.py --write-golden`.
+    #[test]
+    fn golden_argv_matches() {
+        const GOLDEN: &str = include_str!("../../tests/fixtures/golden-argv.json");
+        let golden: Value = serde_json::from_str(GOLDEN).expect("golden parses");
+        let schema = sch();
+        let cases = golden["cases"].as_array().expect("cases array");
+        assert!(!cases.is_empty(), "golden must carry cases");
+        for case in cases {
+            let name = case["name"].as_str().unwrap_or("?");
+            let task_id = case["task"].as_str().expect("task");
+            let form_values: HashMap<String, Value> =
+                serde_json::from_value(case["form_values"].clone()).expect("form_values");
+            let artifact_paths: HashMap<String, String> =
+                serde_json::from_value(case["artifact_paths"].clone()).expect("artifact_paths");
+            let expected: Vec<String> =
+                serde_json::from_value(case["argv"].clone()).expect("argv");
+            let got = resolve_argv(&schema, task_id, &form_values, &artifact_paths)
+                .unwrap_or_else(|e| panic!("case {name}: resolve_argv errored: {e}"));
+            assert_eq!(got, expected, "golden argv mismatch for case {name}");
+        }
+    }
+
     #[test]
     fn caption_render_orders_positional_and_wires_flags() {
         let argv = resolve_argv(
