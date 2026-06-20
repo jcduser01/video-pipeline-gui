@@ -59,17 +59,26 @@ impl Emitter for TauriEmitter {
     }
 }
 
+/// Bundled default schema so the GUI works with zero configuration (first launch,
+/// UI QA). This is the canonical committed schema the contract test keeps in sync
+/// with the live pipeline emit; a configured `schema_path` (set via
+/// `set_schema_path`) overrides it.
+const DEFAULT_SCHEMA: &str = include_str!("../../tests/fixtures/sample-schema.json");
+
 async fn current_schema(ctx: &AppCtx) -> Result<Arc<Schema>, String> {
     if let Some(s) = ctx.schema.lock().await.as_ref() {
         return Ok(s.clone());
     }
-    // Lazily load from the configured schema_path on first use.
+    // Prefer a configured schema_path; otherwise fall back to the bundled default
+    // so the app is usable out of the box.
     let path = {
         let st = ctx.state.lock().await;
         st.schema_path.clone()
     };
-    let path = path.ok_or_else(|| "no schema_path configured".to_string())?;
-    let schema = Schema::load(Path::new(&path)).map_err(|e| e.to_string())?;
+    let schema = match path {
+        Some(p) => Schema::load(Path::new(&p)).map_err(|e| e.to_string())?,
+        None => Schema::from_str(DEFAULT_SCHEMA, true).map_err(|e| e.to_string())?,
+    };
     let arc = Arc::new(schema);
     *ctx.schema.lock().await = Some(arc.clone());
     Ok(arc)
