@@ -27,6 +27,7 @@
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --checker-a: #1a1f27;
   --checker-b: #0d1117;
+  --drop-fill: rgba(59, 157, 255, 0.22);
 }
 
 :root[data-theme="light"] {
@@ -50,6 +51,7 @@
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --checker-a: #e2e8f0;
   --checker-b: #f4f6f9;
+  --drop-fill: rgba(22, 104, 196, 0.20);
 }
 
 * { box-sizing: border-box; }
@@ -286,13 +288,14 @@ code, .mono { font-family: var(--mono); }
 .field__pickerrow { display: flex; gap: 8px; border-radius: 6px; }
 .field__pickerrow .field__field { flex: 1 1 auto; }
 /* drag-drop affordances: every compatible picker hints during a drag; the one
-   under the cursor is emphasised. Outline (not border) so layout never shifts. */
+   under the cursor is emphasised. Uses the accent blue (not the pale --accent-dim,
+   which is too faint on light mode). Outline (not border) so layout never shifts. */
 .field__pickerrow.dnd-eligible {
-  outline: 1px dashed var(--accent-dim); outline-offset: 3px;
+  outline: 1px dashed var(--accent); outline-offset: 3px;
 }
 .field__pickerrow.dnd-over {
   outline: 2px solid var(--accent); outline-offset: 3px;
-  background: var(--accent-dim); border-radius: 6px;
+  background: var(--drop-fill); border-radius: 6px;
 }
 .field__browse {
   flex: 0 0 auto; border: 1px solid var(--border-strong);
