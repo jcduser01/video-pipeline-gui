@@ -1,0 +1,172 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://jasonos/video-pipeline-gui/meta-schema/0.1.0",
+  "title": "Video-Pipeline Control-Tower Meta-Schema",
+  "description": "The grammar of a conformant control-tower schema (INI-087 SADD §3). The pipeline emits a document; the GUI's Rust gateway validates it against this grammar at load (deny-by-default). This is the versioned, GUI-owned contract; the pipeline never owns what 'conformant' means.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["engine", "steps", "tasks", "artifacts", "export_targets"],
+  "properties": {
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "schema_version", "cli_entrypoint"],
+      "properties": {
+        "name": {"type": "string"},
+        "version": {"type": "string"},
+        "schema_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "cli_entrypoint": {"type": "string", "minLength": 1}
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/step"}
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/definitions/task"}
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/artifact"}
+    },
+    "export_targets": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/export_target"}
+    }
+  },
+  "definitions": {
+    "id": {"type": "string", "pattern": "^[a-z0-9]+([._-][a-z0-9]+)*$"},
+    "ui": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label"],
+      "properties": {
+        "label": {"type": "string", "minLength": 1},
+        "control": {"enum": ["toggle", "slider", "stepper", "dropdown", "field", "picker"]},
+        "group": {"type": "string"},
+        "depends_on": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["key"],
+          "properties": {
+            "key": {"type": "string"},
+            "equals": {}
+          }
+        }
+      }
+    },
+    "param": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "type", "arity", "control", "ui"],
+      "properties": {
+        "key": {"$ref": "#/definitions/id"},
+        "type": {"enum": ["bool", "number", "enum", "string", "path"]},
+        "arity": {"enum": ["positional", "value", "switch"]},
+        "control": {"enum": ["toggle", "slider", "stepper", "dropdown", "field", "picker"]},
+        "order": {"type": "integer"},
+        "flag": {"type": "string"},
+        "default": {},
+        "required": {"type": "boolean"},
+        "options": {"type": "array"},
+        "min": {"type": "number"},
+        "max": {"type": "number"},
+        "step": {"type": "number"},
+        "hint": {"type": "string"},
+        "help": {"type": "string"},
+        "example": {"type": "string"},
+        "ui": {"$ref": "#/definitions/ui"}
+      },
+      "allOf": [
+        {
+          "comment": "value/switch params must carry a flag",
+          "if": {"properties": {"arity": {"enum": ["value", "switch"]}}},
+          "then": {"required": ["flag"]}
+        },
+        {
+          "comment": "enum params must enumerate options",
+          "if": {"properties": {"type": {"const": "enum"}}},
+          "then": {"required": ["options"]}
+        }
+      ]
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "order", "optional"],
+      "properties": {
+        "id": {"$ref": "#/definitions/id"},
+        "label": {"type": "string", "minLength": 1},
+        "order": {"type": "integer"},
+        "optional": {"type": "boolean"},
+        "hint": {"type": "string"},
+        "help": {"type": "string"}
+      }
+    },
+    "io_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact", "role", "via"],
+      "properties": {
+        "artifact": {"$ref": "#/definitions/id"},
+        "role": {"enum": ["input", "output"]},
+        "via": {"enum": ["positional", "flag"]},
+        "flag": {"type": "string"},
+        "order": {"type": "integer"}
+      },
+      "if": {"properties": {"via": {"const": "flag"}}},
+      "then": {"required": ["flag"]}
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "step", "label", "subcommand", "optional", "consumes", "produces", "io", "params"],
+      "properties": {
+        "id": {"$ref": "#/definitions/id"},
+        "step": {"$ref": "#/definitions/id"},
+        "label": {"type": "string", "minLength": 1},
+        "subcommand": {"type": "string", "minLength": 1},
+        "optional": {"type": "boolean"},
+        "consumes": {"type": "array", "items": {"$ref": "#/definitions/id"}},
+        "produces": {"type": "array", "items": {"$ref": "#/definitions/id"}},
+        "io": {"type": "array", "items": {"$ref": "#/definitions/io_binding"}},
+        "params": {"type": "array", "items": {"$ref": "#/definitions/param"}},
+        "hint": {"type": "string"},
+        "help": {"type": "string"}
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "path", "previewable"],
+      "properties": {
+        "id": {"$ref": "#/definitions/id"},
+        "kind": {"enum": ["layer", "descriptor", "media", "manifest"]},
+        "path": {"type": "string", "minLength": 1},
+        "previewable": {"type": "boolean"},
+        "z_order": {"type": "integer"},
+        "codec_hint": {"type": "string"},
+        "hint": {"type": "string"},
+        "help": {"type": "string"}
+      },
+      "if": {"properties": {"previewable": {"const": true}}},
+      "then": {"required": ["z_order"]}
+    },
+    "export_target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "subcommand", "bundle", "params"],
+      "properties": {
+        "id": {"$ref": "#/definitions/id"},
+        "label": {"type": "string", "minLength": 1},
+        "subcommand": {"type": "string", "minLength": 1},
+        "bundle": {"type": "string", "minLength": 1},
+        "params": {"type": "array", "items": {"$ref": "#/definitions/param"}},
+        "hint": {"type": "string"},
+        "help": {"type": "string"}
+      }
+    }
+  }
+}

@@ -1,0 +1,79 @@
+<!doctype html>
+<!--
+  index.html — control-tower root layout (SADD §2.1).
+  Three-pane shell: LEFT = step/task tree with enable toggles; CENTER = the
+  schema-driven form + resolved-command preview + plan panel + log; RIGHT =
+  the single-<video> previewer + docked help. Top bar = theme / cap / Run / Cancel.
+  All behaviour is wired in src/main.ts; this file is pure structure.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Video-Pipeline Control Tower</title>
+  </head>
+  <body>
+    <div id="app">
+      <!-- ================= TOP BAR ================= -->
+      <header id="topbar">
+        <div class="topbar__left">
+          <span class="topbar__title">Control Tower</span>
+          <span id="engine-name" class="topbar__engine">—</span>
+          <span id="mode-badge" class="topbar__mode" title="IPC adapter in use">mock</span>
+        </div>
+        <div class="topbar__right">
+          <label class="topbar__cap" title="Max tasks to run in parallel per level">
+            cap
+            <input id="cap-input" type="number" min="1" max="16" step="1" value="2" />
+          </label>
+          <span id="run-progress" class="topbar__progress"></span>
+          <button id="run-btn" type="button" class="btn btn--run">▶ Run</button>
+          <button id="cancel-btn" type="button" class="btn btn--cancel">■ Cancel</button>
+          <button id="theme-toggle" type="button" class="btn btn--ghost">◑ Dark</button>
+        </div>
+      </header>
+
+      <!-- ================= MAIN GRID ================= -->
+      <main id="grid">
+        <!-- LEFT: step/task tree -->
+        <aside id="left" class="pane">
+          <div class="pane__title">Pipeline</div>
+          <div id="step-tree" class="pane__scroll"></div>
+        </aside>
+
+        <!-- CENTER: form + command + plan + log -->
+        <section id="center" class="pane">
+          <div id="form-host" class="center__form pane__scroll"></div>
+
+          <div id="cmd-bar" class="center__cmd"></div>
+
+          <div class="center__plan">
+            <div class="pane__title pane__title--inline">
+              Plan
+              <span id="safezone-advisory" class="advisory" hidden></span>
+            </div>
+            <div id="plan-panel"></div>
+          </div>
+
+          <div class="center__log">
+            <div id="log-view"></div>
+          </div>
+        </section>
+
+        <!-- RIGHT: previewer + help -->
+        <aside id="right" class="pane">
+          <div class="pane__title">Preview</div>
+          <div id="previewer"></div>
+          <div class="pane__title pane__title--help">Help</div>
+          <div id="help" class="right__help pane__scroll">
+            <div id="help-body" class="help">
+              <p class="help__placeholder">Focus a control to see what it does and the CLI flag it maps to.</p>
+            </div>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

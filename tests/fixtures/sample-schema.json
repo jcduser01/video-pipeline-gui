@@ -1,0 +1,968 @@
+{
+  "engine": {
+    "name": "video-pipeline",
+    "version": "0.1.0",
+    "schema_version": "0.1.0",
+    "cli_entrypoint": "video-pipeline"
+  },
+  "steps": [
+    {
+      "id": "project",
+      "label": "Project",
+      "order": 10,
+      "optional": false,
+      "hint": "Scaffold the project folder + project.yml.",
+      "help": "Creates the source/work/review/out/render layout and the project.yml that the later steps read defaults from. Always runs first."
+    },
+    {
+      "id": "safezone",
+      "label": "Safe Zone",
+      "order": 20,
+      "optional": true,
+      "hint": "Derive the safe-zone spec from a template PNG.",
+      "help": "Turns a design template (with the danger region marked) into the machine-readable safe-zone polygon that caption placement and QC use."
+    },
+    {
+      "id": "reframe",
+      "label": "Reframe",
+      "order": 30,
+      "optional": true,
+      "hint": "Landscape -> portrait reframe.",
+      "help": "Tracks the subject and crops the source to the target portrait frame. Skippable when the source is already in-aspect."
+    },
+    {
+      "id": "roughcut",
+      "label": "Rough Cut",
+      "order": 40,
+      "optional": true,
+      "hint": "Propose cuts -> editable decision file.",
+      "help": "Transcribes the clip and proposes a tightened cut (drops filler, false starts, dead air) as an editable decision file you can hand-tune before rendering."
+    },
+    {
+      "id": "caption",
+      "label": "Captions",
+      "order": 50,
+      "optional": true,
+      "hint": "Transcribe + style burned-in captions.",
+      "help": "Builds glossary-corrected word-timed cues, lets you edit the caption file, and renders the styled caption overlay layer."
+    },
+    {
+      "id": "qc",
+      "label": "Safe-Zone QC",
+      "order": 60,
+      "optional": true,
+      "hint": "Check captions/faces against the danger zone.",
+      "help": "Advisory check: flags protected elements intruding on the danger polygon and captions over the speaker's face. Advises, never blocks."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "project.init",
+      "step": "project",
+      "label": "Initialize project",
+      "subcommand": "project-init",
+      "optional": false,
+      "consumes": [],
+      "produces": [
+        "base"
+      ],
+      "io": [
+        {
+          "artifact": "base",
+          "role": "output",
+          "via": "positional",
+          "order": 0
+        }
+      ],
+      "params": [
+        {
+          "key": "identity",
+          "type": "string",
+          "arity": "value",
+          "control": "field",
+          "ui": {
+            "label": "Identity",
+            "group": "Setup"
+          },
+          "flag": "--identity",
+          "required": true,
+          "hint": "Brand/identity id for styling defaults.",
+          "help": "Selects the caption style + glossary set for this creator identity (e.g. a DH or SIGIL.ZERO identity).",
+          "example": "--identity dyson-hope"
+        },
+        {
+          "key": "profile",
+          "type": "enum",
+          "arity": "value",
+          "control": "dropdown",
+          "ui": {
+            "label": "Profile",
+            "control": "dropdown",
+            "group": "Output"
+          },
+          "flag": "--profile",
+          "default": "reels-9x16",
+          "required": true,
+          "options": [
+            "reels-9x16",
+            "story-9x16",
+            "feed-portrait-4x5",
+            "feed-square-1x1",
+            "feed-landscape-16x9"
+          ],
+          "hint": "Output aspect/dimensions preset.",
+          "help": "The target frame. reels-9x16 (1080x1920) is the default for vertical Reels; the feed-* presets cover 4:5, 1:1, and 16:9. Drives crop math and safe-zone derivation.",
+          "example": "--profile reels-9x16"
+        },
+        {
+          "key": "root",
+          "type": "path",
+          "arity": "value",
+          "control": "picker",
+          "ui": {
+            "label": "Projects root",
+            "group": "Setup"
+          },
+          "flag": "--root",
+          "hint": "Parent folder for projects.",
+          "help": "Where the project folder is created. Defaults to ~/Video/Projects."
+        },
+        {
+          "key": "no_trim_filler",
+          "type": "bool",
+          "arity": "switch",
+          "control": "toggle",
+          "ui": {
+            "label": "Preserve filler by default",
+            "control": "toggle",
+            "group": "Setup"
+          },
+          "flag": "--no-trim-filler",
+          "default": false,
+          "hint": "Seed the project to preserve filler.",
+          "help": "Sets the project default so rough cut keeps audio continuity (no filler/false-start trimming) unless overridden per run."
+        }
+      ],
+      "hint": "Scaffold a new project folder.",
+      "help": "Creates the project layout and project.yml. The folder name encodes date/token/hook; identity and profile seed the project defaults."
+    },
+    {
+      "id": "safezone.gen",
+      "step": "safezone",
+      "label": "Generate safe-zone spec",
+      "subcommand": "safezone-gen",
+      "optional": false,
+      "consumes": [],
+      "produces": [
+        "safezone.def"
+      ],
+      "io": [
+        {
+          "artifact": "safezone.def",
+          "role": "output",
+          "via": "flag",
+          "flag": "-o"
+        }
+      ],
+      "params": [
+        {
+          "key": "template",
+          "type": "path",
+          "arity": "positional",
+          "control": "picker",
+          "ui": {
+            "label": "Template PNG",
+            "group": "Input"
+          },
+          "order": 0,
+          "required": true,
+          "hint": "Template PNG with the danger region marked.",
+          "help": "The design template image. The marked region becomes the danger polygon (notch-aware).",
+          "example": "template.png"
+        },
+        {
+          "key": "profile",
+          "type": "enum",
+          "arity": "value",
+          "control": "dropdown",
+          "ui": {
+            "label": "Profile",
+            "control": "dropdown",
+            "group": "Output"
+          },
+          "flag": "--profile",
+          "options": [
+            "reels-9x16",
+            "story-9x16",
+            "feed-portrait-4x5",
+            "feed-square-1x1",
+            "feed-landscape-16x9"
+          ],
+          "hint": "Output aspect/dimensions preset.",
+          "help": "The target frame. reels-9x16 (1080x1920) is the default for vertical Reels; the feed-* presets cover 4:5, 1:1, and 16:9. Drives crop math and safe-zone derivation.",
+          "example": "--profile reels-9x16"
+        },
+        {
+          "key": "key",
+          "type": "enum",
+          "arity": "value",
+          "control": "dropdown",
+          "ui": {
+            "label": "Region key",
+            "control": "dropdown",
+            "group": "Input"
+          },
+          "flag": "--key",
+          "default": "auto",
+          "options": [
+            "auto",
+            "alpha",
+            "color"
+          ],
+          "hint": "How the danger region is marked.",
+          "help": "auto detects alpha vs a key color; force alpha or color if detection guesses wrong."
+        }
+      ],
+      "hint": "Derive the safe-zone polygon from a template PNG.",
+      "help": "Reads a design template where the danger region is marked (by alpha or by a key color) and emits the safe-zone spec JSON consumed downstream."
+    },
+    {
+      "id": "reframe",
+      "step": "reframe",
+      "label": "Reframe to portrait",
+      "subcommand": "reframe",
+      "optional": true,
+      "consumes": [
+        "base"
+      ],
+      "produces": [
+        "base"
+      ],
+      "io": [
+        {
+          "artifact": "base",
+          "role": "input",
+          "via": "positional",
+          "order": 0
+        },
+        {
+          "artifact": "base",
+          "role": "output",
+          "via": "flag",
+          "flag": "-o"
+        }
+      ],
+      "params": [
+        {
+          "key": "profile",
+          "type": "enum",
+          "arity": "value",
+          "control": "dropdown",
+          "ui": {
+            "label": "Profile",
+            "control": "dropdown",
+            "group": "Output"
+          },
+          "flag": "--profile",
+          "default": "reels-9x16",
+          "options": [
+            "reels-9x16",
+            "story-9x16",
+            "feed-portrait-4x5",
+            "feed-square-1x1",
+            "feed-landscape-16x9"
+          ],
+          "hint": "Output aspect/dimensions preset.",
+          "help": "The target frame. reels-9x16 (1080x1920) is the default for vertical Reels; the feed-* presets cover 4:5, 1:1, and 16:9. Drives crop math and safe-zone derivation.",
+          "example": "--profile reels-9x16"
+        },
+        {
+          "key": "mode",
+          "type": "enum",
+          "arity": "value",
+          "control": "dropdown",
+          "ui": {
+            "label": "Crop mode",
+            "control": "dropdown",
+            "group": "Crop"
+          },
+          "flag": "--mode",
+          "default": "static",
+          "options": [
+            "static",
+            "dynamic"
+          ],
+          "hint": "Static hold vs subject-following crop.",
+          "help": "static picks one crop window for the whole clip (predictable); dynamic pans to follow the subject (more motion)."
+        },
+        {
+          "key": "tracker",
+          "type": "enum",
+          "arity": "value",
+          "control": "dropdown",
+          "ui": {
+            "label": "Tracker",
+            "control": "dropdown",
+            "group": "Crop"
+          },
+          "flag": "--tracker",
+          "default": "opencv",
+          "options": [
+            "opencv",
+            "mediapipe"
+          ],
+          "hint": "Subject detector backend.",
+          "help": "opencv is dependency-light; mediapipe is the higher-quality daily-driver face/pose tracker."
+        },
+        {
+          "key": "dry_run",
+          "type": "bool",
+          "arity": "switch",
+          "control": "toggle",
+          "ui": {
+            "label": "Dry run",
+            "control": "toggle",
+            "group": "Crop"
+          },
+          "flag": "--dry-run",
+          "default": false,
+          "hint": "Plan the crop without rendering.",
+          "help": "Computes and prints the crop plan but writes no video — fast way to sanity-check tracking before a full render."
+        }
+      ],
+      "hint": "Crop landscape source to the portrait frame.",
+      "help": "Subject-tracking crop. Static holds one crop; dynamic follows the subject. Daily-driver path needs MediaPipe; --dry-run plans without rendering."
+    },
+    {
+      "id": "roughcut",
+      "step": "roughcut",
+      "label": "Propose rough cut",
+      "subcommand": "roughcut",
+      "optional": true,
+      "consumes": [
+        "base"
+      ],
+      "produces": [
+        "roughcut.def"
+      ],
+      "io": [
+        {
+          "artifact": "base",
+          "role": "input",
+          "via": "positional",
+          "order": 0
+        },
+        {
+          "artifact": "roughcut.def",
+          "role": "output",
+          "via": "flag",
+          "flag": "-o"
+        }
+      ],
+      "params": [
+        {
+          "key": "no_trim_filler",
+          "type": "bool",
+          "arity": "switch",
+          "control": "toggle",
+          "ui": {
+            "label": "Preserve filler",
+            "control": "toggle",
+            "group": "Cut"
+          },
+          "flag": "--no-trim-filler",
+          "default": false,
+          "hint": "Keep filler / preserve audio continuity.",
+          "help": "Disables filler/dead-air trimming — one whole-clip KEEP, no speech edits. Use when continuity matters more than tightness."
+        },
+        {
+          "key": "no_false_starts",
+          "type": "bool",
+          "arity": "switch",
+          "control": "toggle",
+          "ui": {
+            "label": "Keep false starts",
+            "control": "toggle",
+            "group": "Cut"
+          },
+          "flag": "--no-false-starts",
+          "default": false,
+          "hint": "Don't drop false starts."
+        },
+        {
+          "key": "silence_gap",
+          "type": "number",
+          "arity": "value",
+          "control": "slider",
+          "ui": {
+            "label": "Silence gap (s)",
+            "control": "slider",
+            "group": "Cut"
+          },
+          "flag": "--silence-gap",
+          "default": 0.6,
+          "min": 0.0,
+          "max": 3.0,
+          "step": 0.05,
+          "hint": "Dead-air gap (s) that triggers a cut.",
+          "help": "Silence longer than this (seconds) is treated as dead air and removed. Lower = tighter, more aggressive."
+        },
+        {
+          "key": "pad_lead",
+          "type": "number",
+          "arity": "value",
+          "control": "slider",
+          "ui": {
+            "label": "Lead pad (s)",
+            "control": "slider",
+            "group": "Padding"
+          },
+          "flag": "--pad-lead",
+          "default": 0.06,
+          "min": 0.0,
+          "max": 0.5,
+          "step": 0.01,
+          "hint": "Lead padding before each kept segment (s).",
+          "help": "Asymmetric cut padding. Small lead avoids clipping the first word's onset."
+        },
+        {
+          "key": "pad_tail",
+          "type": "number",
+          "arity": "value",
+          "control": "slider",
+          "ui": {
+            "label": "Tail pad (s)",
+            "control": "slider",
+            "group": "Padding"
+          },
+          "flag": "--pad-tail",
+          "default": 0.15,
+          "min": 0.0,
+          "max": 0.5,
+          "step": 0.01,
+          "hint": "Tail padding after each kept segment (s).",
+          "help": "Larger tail than lead avoids clipping word-ends (a real defect found in Phase-2 testing)."
+        },
+        {
+          "key": "online",
+          "type": "bool",
+          "arity": "switch",
+          "control": "toggle",
+          "ui": {
+            "label": "Online model fetch",
+            "control": "toggle",
+            "group": "Transcription"
+          },
+          "flag": "--online",
+          "default": false,
+          "hint": "Allow model download (default offline).",
+          "help": "mlx-whisper runs offline by default; --online permits a one-time model fetch."
+        },
+        {
+          "key": "dry_run",
+          "type": "bool",
+          "arity": "switch",
+          "control": "toggle",
+          "ui": {
+            "label": "Dry run",
+            "control": "toggle",
+            "group": "Cut"
+          },
+          "flag": "--dry-run",
+          "default": false,
+          "hint": "Propose without rendering a cut."
+        }
+      ],
+      "hint": "Transcribe + propose an editable cut decision file.",
+      "help": "Produces the decision file (one scannable line per segment) you can hand-edit before rendering. Daily driver transcribes with mlx-whisper unless a --transcript is supplied."
+    },
+    {
+      "id": "roughcut.render",
+      "step": "roughcut",
+      "label": "Render rough cut",
+      "subcommand": "roughcut-render",
+      "optional": true,
+      "consumes": [
+        "base",
+        "roughcut.def"
+      ],
+      "produces": [
+        "base"
+      ],
+      "io": [
+        {
+          "artifact": "roughcut.def",
+          "role": "input",
+          "via": "positional",
+          "order": 0
+        },
+        {
+          "artifact": "base",
+          "role": "input",
+          "via": "flag",
+          "flag": "-i"
+        },
+        {
+          "artifact": "base",
+          "role": "output",
+          "via": "flag",
+          "flag": "-o"
+        }
+      ],
+      "params": [
+        {
+          "key": "dry_run",
+          "type": "bool",
+          "arity": "switch",
+          "control": "toggle",
+          "ui": {
+            "label": "Dry run",
+            "control": "toggle",
+            "group": "Render"
+          },
+          "flag": "--dry-run",
+          "default": false,
+          "hint": "Show the trim/concat plan without rendering."
+        }
+      ],
+      "hint": "Re-render the cut from the (edited) decision file.",
+      "help": "Applies the decision file's KEEP segments to the source via ffmpeg trim/concat. Re-runnable after you hand-edit the decision file."
+    },
+    {
+      "id": "caption.define",
+      "step": "caption",
+      "label": "Build caption file",
+      "subcommand": "captions",
+      "optional": true,
+      "consumes": [
+        "base",
+        "safezone.def"
+      ],
+      "produces": [
+        "caption.def"
+      ],
+      "io": [
+        {
+          "artifact": "base",
+          "role": "input",
+          "via": "positional",
+          "order": 0
+        },
+        {
+          "artifact": "caption.def",
+          "role": "output",
+          "via": "flag",
+          "flag": "-o"
+        },
+        {
+          "artifact": "safezone.def",
+          "role": "input",
+          "via": "flag",
+          "flag": "--safezone"
+        }
+      ],
+      "params": [
+        {
+          "key": "identity",
+          "type": "string",
+          "arity": "value",
+          "control": "field",
+          "ui": {
+            "label": "Identity",
+            "group": "Setup"
+          },
+          "flag": "--identity",
+          "required": true,
+          "hint": "Identity for glossary + caption style.",
+          "example": "--identity dyson-hope"
+        },
+        {
+          "key": "profile",
+          "type": "enum",
+          "arity": "value",
+          "control": "dropdown",
+          "ui": {
+            "label": "Profile",
+            "control": "dropdown",
+            "group": "Output"
+          },
+          "flag": "--profile",
+          "default": "reels-9x16",
+          "options": [
+            "reels-9x16",
+            "story-9x16",
+            "feed-portrait-4x5",
+            "feed-square-1x1",
+            "feed-landscape-16x9"
+          ],
+          "hint": "Output aspect/dimensions preset.",
+          "help": "The target frame. reels-9x16 (1080x1920) is the default for vertical Reels; the feed-* presets cover 4:5, 1:1, and 16:9. Drives crop math and safe-zone derivation.",
+          "example": "--profile reels-9x16"
+        },
+        {
+          "key": "karaoke",
+          "type": "bool",
+          "arity": "switch",
+          "control": "toggle",
+          "ui": {
+            "label": "Karaoke highlight",
+            "control": "toggle",
+            "group": "Style"
+          },
+          "flag": "--karaoke",
+          "default": false,
+          "hint": "Active-word highlight.",
+          "help": "Karaoke mode highlights the currently-spoken word within each cue."
+        },
+        {
+          "key": "min_words",
+          "type": "number",
+          "arity": "value",
+          "control": "slider",
+          "ui": {
+            "label": "Min words / cue",
+            "control": "slider",
+            "group": "Timing"
+          },
+          "flag": "--min-words",
+          "min": 1,
+          "max": 8,
+          "step": 1,
+          "hint": "Minimum words per cue.",
+          "help": "Lower bound of the words-per-cue range. 1/1 gives single-word cues; widen for phrase cues."
+        },
+        {
+          "key": "max_words",
+          "type": "number",
+          "arity": "value",
+          "control": "slider",
+          "ui": {
+            "label": "Max words / cue",
+            "control": "slider",
+            "group": "Timing"
+          },
+          "flag": "--max-words",
+          "min": 1,
+          "max": 8,
+          "step": 1,
+          "hint": "Maximum words per cue.",
+          "help": "Upper bound of the words-per-cue range (e.g. 4 for 2/4 phrasing)."
+        },
+        {
+          "key": "online",
+          "type": "bool",
+          "arity": "switch",
+          "control": "toggle",
+          "ui": {
+            "label": "Online model fetch",
+            "control": "toggle",
+            "group": "Transcription"
+          },
+          "flag": "--online",
+          "default": false,
+          "hint": "Allow model download (default offline)."
+        },
+        {
+          "key": "dry_run",
+          "type": "bool",
+          "arity": "switch",
+          "control": "toggle",
+          "ui": {
+            "label": "Dry run",
+            "control": "toggle",
+            "group": "Timing"
+          },
+          "flag": "--dry-run",
+          "default": false,
+          "hint": "Build cues without rendering."
+        }
+      ],
+      "hint": "Transcribe -> glossary-corrected word-timed cues.",
+      "help": "Produces the editable caption file (phrase-aware, balanced cues). --safezone lets it emit the styled props; you can hand-edit the caption file before rendering."
+    },
+    {
+      "id": "caption.render",
+      "step": "caption",
+      "label": "Render caption overlay",
+      "subcommand": "captions-render",
+      "optional": true,
+      "consumes": [
+        "caption.def",
+        "safezone.def"
+      ],
+      "produces": [
+        "caption"
+      ],
+      "io": [
+        {
+          "artifact": "caption.def",
+          "role": "input",
+          "via": "positional",
+          "order": 0
+        },
+        {
+          "artifact": "caption",
+          "role": "output",
+          "via": "flag",
+          "flag": "-o"
+        },
+        {
+          "artifact": "safezone.def",
+          "role": "input",
+          "via": "flag",
+          "flag": "--safezone"
+        }
+      ],
+      "params": [
+        {
+          "key": "identity",
+          "type": "string",
+          "arity": "value",
+          "control": "field",
+          "ui": {
+            "label": "Identity",
+            "group": "Style"
+          },
+          "flag": "--identity",
+          "hint": "Override the identity style."
+        },
+        {
+          "key": "karaoke",
+          "type": "bool",
+          "arity": "switch",
+          "control": "toggle",
+          "ui": {
+            "label": "Karaoke highlight",
+            "control": "toggle",
+            "group": "Style"
+          },
+          "flag": "--karaoke",
+          "default": false,
+          "hint": "Active-word highlight."
+        },
+        {
+          "key": "dry_run",
+          "type": "bool",
+          "arity": "switch",
+          "control": "toggle",
+          "ui": {
+            "label": "Dry run",
+            "control": "toggle",
+            "group": "Style"
+          },
+          "flag": "--dry-run",
+          "default": false,
+          "hint": "Build props without rendering."
+        }
+      ],
+      "hint": "Render the styled caption overlay layer (alpha .mov).",
+      "help": "Rebuilds props from the (possibly hand-edited) caption file + style/safe-zone config and renders the transparent caption overlay via Remotion (daily driver). This is the previewable caption layer the NLE stacks on top."
+    },
+    {
+      "id": "safezone.qc",
+      "step": "qc",
+      "label": "Safe-zone QC",
+      "subcommand": "qc",
+      "optional": true,
+      "consumes": [
+        "base",
+        "caption",
+        "safezone.def"
+      ],
+      "produces": [
+        "qc.report"
+      ],
+      "io": [
+        {
+          "artifact": "base",
+          "role": "input",
+          "via": "positional",
+          "order": 0
+        },
+        {
+          "artifact": "safezone.def",
+          "role": "input",
+          "via": "flag",
+          "flag": "--safezone"
+        },
+        {
+          "artifact": "qc.report",
+          "role": "output",
+          "via": "flag",
+          "flag": "--report"
+        }
+      ],
+      "params": [
+        {
+          "key": "strict",
+          "type": "bool",
+          "arity": "switch",
+          "control": "toggle",
+          "ui": {
+            "label": "Strict (gate)",
+            "control": "toggle",
+            "group": "QC"
+          },
+          "flag": "--strict",
+          "default": false,
+          "hint": "Exit non-zero on any violation.",
+          "help": "Turns advisory warnings into a hard failure (exit 1) — for scripted gating, not the interactive default."
+        },
+        {
+          "key": "no_face_check",
+          "type": "bool",
+          "arity": "switch",
+          "control": "toggle",
+          "ui": {
+            "label": "Skip face check",
+            "control": "toggle",
+            "group": "QC"
+          },
+          "flag": "--no-face-check",
+          "default": false,
+          "hint": "Skip caption-over-face detection."
+        },
+        {
+          "key": "occlusion_frac",
+          "type": "number",
+          "arity": "value",
+          "control": "slider",
+          "ui": {
+            "label": "Occlusion frac",
+            "control": "slider",
+            "group": "Thresholds"
+          },
+          "flag": "--occlusion-frac",
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.05,
+          "hint": "Caption∩face fraction that flags occlusion."
+        }
+      ],
+      "hint": "Advisory: flag danger-zone intrusions + captions over faces.",
+      "help": "Checks protected elements against the danger polygon (notch-aware) and captions over the speaker's face. Advisory only — it warns at the export/composite control but never blocks (SADD §4.2). --strict makes it exit non-zero for CI gating."
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "base",
+      "kind": "layer",
+      "path": "work/base.mp4",
+      "previewable": true,
+      "z_order": 0,
+      "hint": "The working video (reframed/cut).",
+      "help": "The base video channel. project.init seeds it; reframe and roughcut.render each rewrite it. The previewer's base layer."
+    },
+    {
+      "id": "safezone.def",
+      "kind": "descriptor",
+      "path": "work/safezone.json",
+      "previewable": false,
+      "hint": "Safe-zone polygon spec.",
+      "help": "Machine-readable danger/safe polygon (notch-aware). A descriptor: caption placement and QC read it; no branch reads another's pixels."
+    },
+    {
+      "id": "roughcut.def",
+      "kind": "manifest",
+      "path": "work/roughcut.decision.yml",
+      "previewable": false,
+      "hint": "Editable cut decision file.",
+      "help": "The product of the rough-cut step — one scannable KEEP/DROP line per segment. Hand-edit it, then roughcut.render applies it."
+    },
+    {
+      "id": "caption.def",
+      "kind": "manifest",
+      "path": "work/captions.yml",
+      "previewable": false,
+      "hint": "Editable caption file.",
+      "help": "Word-timed, glossary-corrected cues. Hand-edit before rendering."
+    },
+    {
+      "id": "caption",
+      "kind": "layer",
+      "path": "layers/captions.mov",
+      "previewable": true,
+      "z_order": 30,
+      "codec_hint": "hevc-alpha",
+      "hint": "Styled caption overlay (transparent).",
+      "help": "The rendered caption layer the NLE stacks on top. Transparent HEVC-alpha — the one previewer alpha case (see the WKWebView spike)."
+    },
+    {
+      "id": "qc.report",
+      "kind": "manifest",
+      "path": "review/qc-report.json",
+      "previewable": false,
+      "hint": "Safe-zone QC findings.",
+      "help": "JSON report of danger-zone intrusions and caption-over-face hits. Advisory input to the export/composite warning."
+    }
+  ],
+  "export_targets": [
+    {
+      "id": "premiere",
+      "label": "Adobe Premiere Pro",
+      "subcommand": "handoff --format premiere",
+      "bundle": "exports/premiere",
+      "params": [
+        {
+          "key": "fps",
+          "type": "number",
+          "arity": "value",
+          "control": "slider",
+          "ui": {
+            "label": "FPS",
+            "control": "slider",
+            "group": "Sequence"
+          },
+          "flag": "--fps",
+          "default": 30,
+          "min": 24,
+          "max": 60,
+          "step": 1,
+          "hint": "Sequence frame rate."
+        }
+      ],
+      "hint": "FCP7 XML (XMEML) — opens in Premiere Pro.",
+      "help": "Assembles the base cut + caption overlay as tracks referencing the media files (never reconstructed), as FCP7/XMEML XML. Premiere does not import FCPXML, so this is its dedicated target."
+    },
+    {
+      "id": "fcpx",
+      "label": "Final Cut Pro / DaVinci Resolve",
+      "subcommand": "handoff --format fcpxml",
+      "bundle": "exports/fcpx",
+      "params": [
+        {
+          "key": "fps",
+          "type": "number",
+          "arity": "value",
+          "control": "slider",
+          "ui": {
+            "label": "FPS",
+            "control": "slider",
+            "group": "Sequence"
+          },
+          "flag": "--fps",
+          "default": 30,
+          "min": 24,
+          "max": 60,
+          "step": 1,
+          "hint": "Sequence frame rate."
+        },
+        {
+          "key": "event",
+          "type": "string",
+          "arity": "value",
+          "control": "field",
+          "ui": {
+            "label": "Event name",
+            "group": "Sequence"
+          },
+          "flag": "--event",
+          "default": "JasonOS",
+          "hint": "FCPXML event name."
+        }
+      ],
+      "hint": "FCPXML 1.10 — Final Cut / Resolve.",
+      "help": "Same timeline model serialized as FCPXML for Final Cut Pro and DaVinci Resolve."
+    }
+  ]
+}
