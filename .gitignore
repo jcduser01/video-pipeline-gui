@@ -7,6 +7,15 @@ dist/
 src-tauri/target/
 src-tauri/gen/
 
+# Lockfiles — intentionally untracked. This is single-build-machine, CEO-operated
+# tooling, so dependency-pin churn from a local build must never surface as a
+# reviewable (accidentally-committable) change. Manifests stay tracked — Cargo.toml
+# and package.json are the build's source of truth; only the generated locks are
+# ignored. (Trade-off: cross-machine build reproducibility is not pinned. Acceptable
+# for one builder; commit a lock if a second build host is ever added.)
+Cargo.lock
+package-lock.json
+
 # OS / editor
 .DS_Store
 *.log

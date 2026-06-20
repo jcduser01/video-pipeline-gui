@@ -20,7 +20,11 @@ path = "src/main.rs"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+# `protocol-asset` is required because tauri.conf.json enables the asset protocol
+# (the previewer loads local video via asset:). Declared here so the Tauri CLI does
+# not auto-insert it into this manifest on every build (which otherwise shows up as
+# spurious, accidentally-committable churn). Keep in sync with assetProtocol config.
+tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
