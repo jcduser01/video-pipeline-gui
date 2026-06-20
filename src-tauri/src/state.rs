@@ -14,7 +14,11 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
+// Session fields serialize camelCase (formValues / previewLayer) to match the
+// frontend's SessionState. read_state/write_state round-trip raw serde, so the
+// casing must agree with the TypeScript contract.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Session {
     /// Last form values, keyed "task_id.param_key".
     #[serde(default)]
@@ -40,9 +44,11 @@ pub struct AppState {
     pub projects: HashMap<String, String>,
     #[serde(default)]
     pub active_project: Option<String>,
-    /// per-project session, keyed by project name
+    /// The current session (form values, preview layer, theme). One session for
+    /// now — matches the frontend; a per-project map can return with a project
+    /// switcher.
     #[serde(default)]
-    pub sessions: HashMap<String, Session>,
+    pub session: Session,
 }
 
 impl AppState {
@@ -65,11 +71,6 @@ impl AppState {
         std::fs::write(&tmp, text)?;
         std::fs::rename(&tmp, path)
     }
-
-    pub fn active_session_mut(&mut self) -> Option<&mut Session> {
-        let name = self.active_project.clone()?;
-        Some(self.sessions.entry(name).or_default())
-    }
 }
 
 /// Default store location under the OS app-config dir.
@@ -88,18 +89,17 @@ mod tests {
         let mut s = AppState::default();
         s.projects.insert("demo".into(), "/tmp/demo".into());
         s.active_project = Some("demo".into());
-        s.active_session_mut().unwrap().theme = "light".into();
-        s.active_session_mut()
-            .unwrap()
+        s.session.theme = "light".into();
+        s.session
             .form_values
             .insert("reframe.mode".into(), serde_json::json!("dynamic"));
         s.save(&path).unwrap();
 
         let back = AppState::load(&path);
         assert_eq!(back.active_project.as_deref(), Some("demo"));
-        assert_eq!(back.sessions["demo"].theme, "light");
+        assert_eq!(back.session.theme, "light");
         assert_eq!(
-            back.sessions["demo"].form_values["reframe.mode"],
+            back.session.form_values["reframe.mode"],
             serde_json::json!("dynamic")
         );
         let _ = std::fs::remove_dir_all(&dir);

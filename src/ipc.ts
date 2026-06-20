@@ -478,7 +478,13 @@ class MockIpc implements Ipc {
 // ---------------------------------------------------------------------------
 
 function isTauri(): boolean {
-  return typeof window !== "undefined" && "__TAURI__" in window;
+  // Tauri v2 always injects `__TAURI_INTERNALS__` into the webview; the legacy
+  // `__TAURI__` global only appears when `withGlobalTauri` is enabled. Check both
+  // so the real backend is used under `tauri dev` regardless of that setting.
+  return (
+    typeof window !== "undefined" &&
+    ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
+  );
 }
 
 export const ipc: Ipc = isTauri() ? new TauriIpc() : new MockIpc();

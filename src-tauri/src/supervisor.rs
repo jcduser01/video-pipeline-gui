@@ -23,7 +23,11 @@ use crate::command::resolve_argv;
 use crate::scheduler::{Plan, TaskState};
 use crate::schema::Schema;
 
+// Event payloads serialize camelCase to match the frontend's event types
+// (taskId / runId). Tauri does not auto-convert emitted event bodies (only
+// command argument names), so the casing must match here.
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LogLine {
     pub task_id: String,
     pub stream: String, // stdout | stderr
@@ -31,12 +35,14 @@ pub struct LogLine {
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StatusEvent {
     pub task_id: String,
     pub state: TaskState,
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PlanProgress {
     pub run_id: String,
     pub level: usize,
