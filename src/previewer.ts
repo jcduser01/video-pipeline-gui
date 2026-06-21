@@ -22,6 +22,27 @@ import { store } from "./state";
 import { artifactPathsFor } from "./command";
 import { bindLabelHelp, helpMarkup, type HelpPanel } from "./help";
 
+const PLAY_ICON =
+  '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M4 2.5v11l9-5.5z"/></svg>';
+const PAUSE_ICON =
+  '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M4 2.5h3v11H4zM9 2.5h3v11H9z"/></svg>';
+
+/** mm:ss for the transport readout (NaN/∞ render as 0:00 during load). */
+function clock(t: number): string {
+  if (!Number.isFinite(t) || t < 0) t = 0;
+  const m = Math.floor(t / 60);
+  const s = Math.floor(t % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+/** Friendly layer name from an artifact id: "caption.preview" -> "Caption (preview)". */
+function layerName(a: Artifact): string {
+  const isPreview = a.id.endsWith(".preview");
+  const stem = a.id.replace(/\.preview$/, "").replace(/[._]/g, " ");
+  const title = stem.replace(/\b\w/g, (c) => c.toUpperCase());
+  return isPreview ? `${title} (preview)` : title;
+}
+
 export interface Previewer {
   /** Recompute which layers are available (present ∩ previewable) and rebuild. */
   refresh(projectRoot: string | undefined): Promise<void>;
@@ -42,6 +63,11 @@ export function mountPreviewer(
         <video class="previewer__video" playsinline preload="auto"></video>
         <div class="previewer__empty empty-state"><span></span></div>
       </div>
+    </div>
+    <div class="previewer__transport">
+      <button class="previewer__play" type="button" title="Play / pause" disabled>${PLAY_ICON}</button>
+      <input class="previewer__seek" type="range" min="0" max="0" step="0.01" value="0" disabled />
+      <span class="previewer__time">0:00&nbsp;/&nbsp;0:00</span>
     </div>
     <div class="previewer__controls">
       <label class="previewer__layerlabel"><span data-help="layer">Layer</span>
@@ -83,6 +109,9 @@ export function mountPreviewer(
   const vol = host.querySelector<HTMLInputElement>(".previewer__vol")!;
   const volVal = host.querySelector<HTMLOutputElement>(".previewer__volval")!;
   const status = host.querySelector<HTMLElement>(".previewer__status")!;
+  const playBtn = host.querySelector<HTMLButtonElement>(".previewer__play")!;
+  const seek = host.querySelector<HTMLInputElement>(".previewer__seek")!;
+  const timeEl = host.querySelector<HTMLElement>(".previewer__time")!;
   const emptyEl = host.querySelector<HTMLElement>(".previewer__empty > span")!;
   const emptyBox = host.querySelector<HTMLElement>(".previewer__empty")!;
 
@@ -131,6 +160,50 @@ export function mountPreviewer(
   vol.addEventListener("input", applyVolume);
   applyVolume();
 
+  // --- transport: play/pause + scrub + clock ---
+  let scrubbing = false;
+  const setPlayIcon = () => {
+    playBtn.innerHTML = video.paused || video.ended ? PLAY_ICON : PAUSE_ICON;
+  };
+  const enableTransport = (on: boolean) => {
+    playBtn.disabled = !on;
+    seek.disabled = !on;
+    if (!on) {
+      seek.value = "0";
+      timeEl.innerHTML = "0:00&nbsp;/&nbsp;0:00";
+      setPlayIcon();
+    }
+  };
+  const renderTime = () => {
+    const dur = Number.isFinite(video.duration) ? video.duration : 0;
+    timeEl.innerHTML = `${clock(video.currentTime)}&nbsp;/&nbsp;${clock(dur)}`;
+  };
+
+  playBtn.addEventListener("click", () => {
+    if (video.paused || video.ended) void video.play().catch(() => {});
+    else video.pause();
+  });
+  video.addEventListener("play", setPlayIcon);
+  video.addEventListener("pause", setPlayIcon);
+  video.addEventListener("ended", setPlayIcon);
+  video.addEventListener("loadedmetadata", () => {
+    seek.max = String(Number.isFinite(video.duration) ? video.duration : 0);
+    renderTime();
+  });
+  video.addEventListener("timeupdate", () => {
+    if (!scrubbing) seek.value = String(video.currentTime);
+    renderTime();
+  });
+  // Scrub: seek live while dragging; timeupdate stops fighting the thumb.
+  seek.addEventListener("input", () => {
+    scrubbing = true;
+    video.currentTime = Number(seek.value);
+    renderTime();
+  });
+  seek.addEventListener("change", () => {
+    scrubbing = false;
+  });
+
   // Previewable layers from the schema, sorted by z_order (low → high).
   const previewable = (schema.artifacts as Artifact[])
     .filter((a) => a.previewable)
@@ -161,10 +234,9 @@ export function mountPreviewer(
           /* autoplay policy may block resume; leave paused */
         });
       }
-      const alpha = artifact.codec_hint?.includes("alpha");
-      status.textContent = alpha
-        ? `${artifact.id} · alpha (WKWebView spike)`
-        : artifact.id;
+      enableTransport(true);
+      setPlayIcon();
+      status.textContent = layerName(artifact);
     };
 
     video.addEventListener("loadeddata", onLoaded);
@@ -184,8 +256,11 @@ export function mountPreviewer(
     const src = paths[artifact.id];
     store.setPreviewLayer(id);
     if (!presentIds.has(id) || !src) {
-      status.textContent = `${id} · not on disk yet`;
-      showEmpty(`The “${id}” layer hasn't been rendered yet — run the step that produces it to preview it here.`);
+      enableTransport(false);
+      video.removeAttribute("src");
+      video.load();
+      status.textContent = `${layerName(artifact)} · not on disk yet`;
+      showEmpty(`The “${layerName(artifact)}” layer hasn't been rendered yet — run the step that produces it to preview it here.`);
       return;
     }
     swapSource(src, artifact);
@@ -208,7 +283,7 @@ export function mountPreviewer(
         const opt = document.createElement("option");
         opt.value = a.id;
         const here = presentIds.has(a.id);
-        opt.textContent = here ? a.id : `${a.id} (absent)`;
+        opt.textContent = here ? layerName(a) : `${layerName(a)} (absent)`;
         opt.disabled = !here;
         select.appendChild(opt);
       }
@@ -225,6 +300,7 @@ export function mountPreviewer(
         select.value = chosen;
         selectLayer(chosen, presentIds);
       } else {
+        enableTransport(false);
         status.textContent = "";
         showEmpty(
           "Layer preview. Once a step renders a layer (base video, caption overlay…), pick it here to play it back.",

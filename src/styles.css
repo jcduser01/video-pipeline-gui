@@ -523,9 +523,27 @@ code, .mono { font-family: var(--mono); }
   object-fit: contain;
   background: transparent;
 }
+.previewer__transport {
+  display: flex; align-items: center; gap: 8px; flex: 0 0 auto;
+  margin-top: 8px;
+}
+.previewer__play {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; flex: 0 0 auto;
+  background: var(--bg-sunken); border: 1px solid var(--border);
+  color: var(--text); border-radius: 4px; cursor: pointer;
+}
+.previewer__play:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.previewer__play:disabled { opacity: 0.4; cursor: not-allowed; }
+.previewer__seek { flex: 1 1 auto; min-width: 0; accent-color: var(--accent); }
+.previewer__seek:disabled { opacity: 0.4; }
+.previewer__time {
+  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  flex: 0 0 auto; white-space: nowrap;
+}
 .previewer__controls {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  flex: 0 0 auto;
+  flex: 0 0 auto; margin-top: 8px;
 }
 .previewer__layerlabel, .previewer__vollabel {
   display: flex; align-items: center; gap: 6px;
