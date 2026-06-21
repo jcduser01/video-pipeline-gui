@@ -55,10 +55,39 @@ function clearHighlights(): void {
     .forEach((el) => el.classList.remove("dnd-eligible", "dnd-over"));
 }
 
+// Include the dotted drop adorner (outline-offset) plus a little slack, so the
+// whole area inside the adorner is a valid target — not just the control's box.
+const HIT_PAD = 8;
+
+/** Nearest picker row whose (padded) rect contains the CSS-px point, or null. */
+function rowAtCss(cssX: number, cssY: number): HTMLElement | null {
+  let best: HTMLElement | null = null;
+  let bestDist = Infinity;
+  for (const row of allRows()) {
+    const r = row.getBoundingClientRect();
+    if (
+      cssX >= r.left - HIT_PAD &&
+      cssX <= r.right + HIT_PAD &&
+      cssY >= r.top - HIT_PAD &&
+      cssY <= r.bottom + HIT_PAD
+    ) {
+      const cx = (r.left + r.right) / 2;
+      const cy = (r.top + r.bottom) / 2;
+      const d = Math.hypot(cssX - cx, cssY - cy);
+      if (d < bestDist) {
+        bestDist = d;
+        best = row;
+      }
+    }
+  }
+  return best;
+}
+
 /**
- * Map a Tauri drag position to the picker row under the cursor. Tauri gives
- * physical pixels, but the logical/physical mapping isn't guaranteed, so try the
- * dpr-scaled coordinate first and the raw coordinate as a fallback.
+ * Map a Tauri drag position to the picker row under the cursor. The whole area
+ * inside the drop adorner counts (rect hit-test, not elementFromPoint). Tauri
+ * gives physical pixels, but the logical/physical mapping isn't guaranteed, so try
+ * the dpr-scaled coordinate first and the raw coordinate as a fallback.
  */
 function rowAtPosition(x: number, y: number): HTMLElement | null {
   const dpr = window.devicePixelRatio || 1;
@@ -66,9 +95,8 @@ function rowAtPosition(x: number, y: number): HTMLElement | null {
     [x / dpr, y / dpr],
     [x, y],
   ]) {
-    const el = document.elementFromPoint(cx, cy) as HTMLElement | null;
-    const row = (el?.closest(PICKER_SEL) as HTMLElement | null) ?? null;
-    if (row) return row;
+    const hit = rowAtCss(cx, cy);
+    if (hit) return hit;
   }
   return null;
 }
