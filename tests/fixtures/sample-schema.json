@@ -726,6 +726,106 @@
           "help": "Karaoke mode highlights the currently-spoken word within each cue."
         },
         {
+          "key": "font_family",
+          "type": "enum",
+          "arity": "value",
+          "control": "dropdown",
+          "ui": {
+            "label": "Font",
+            "control": "dropdown",
+            "group": "Style"
+          },
+          "flag": "--font-family",
+          "default": "Helvetica",
+          "options": [
+            "Archivo",
+            "Inter",
+            "IBM Plex Mono",
+            "Helvetica",
+            "Helvetica Neue",
+            "Arial",
+            "Arial Black",
+            "Avenir Next",
+            "Futura",
+            "Gill Sans",
+            "Impact",
+            "Verdana",
+            "Georgia",
+            "Times New Roman",
+            "Courier New",
+            "Menlo",
+            "Trebuchet MS"
+          ],
+          "hint": "Caption font family.",
+          "help": "The font the captions render in. Curated allowlist (the same set the pipeline accepts); Remotion falls back to Helvetica until font loading lands (INI-088 Phase 4)."
+        },
+        {
+          "key": "font_size",
+          "type": "number",
+          "arity": "value",
+          "control": "slider",
+          "ui": {
+            "label": "Font size (px)",
+            "control": "slider",
+            "group": "Style"
+          },
+          "flag": "--font-size",
+          "default": 96,
+          "min": 24,
+          "max": 240,
+          "step": 2,
+          "hint": "Caption font size (px at native height).",
+          "help": "Pixel size at the profile's native height (reels = 1920px tall). Capped to a legible range at the Python boundary."
+        },
+        {
+          "key": "fill_color",
+          "type": "string",
+          "arity": "value",
+          "control": "field",
+          "ui": {
+            "label": "Fill color",
+            "control": "field",
+            "group": "Style"
+          },
+          "flag": "--fill-color",
+          "default": "#FFFFFF",
+          "hint": "Text fill color (hex).",
+          "help": "Hex color of the caption text fill, e.g. #FFFFFF. A color-picker widget is deferred; enter hex for v1."
+        },
+        {
+          "key": "stroke_color",
+          "type": "string",
+          "arity": "value",
+          "control": "field",
+          "ui": {
+            "label": "Stroke color",
+            "control": "field",
+            "group": "Style"
+          },
+          "flag": "--stroke-color",
+          "default": "#000000",
+          "hint": "Text border/stroke color (hex).",
+          "help": "Hex color of the caption text outline, e.g. #000000."
+        },
+        {
+          "key": "stroke_width",
+          "type": "number",
+          "arity": "value",
+          "control": "slider",
+          "ui": {
+            "label": "Stroke width (px)",
+            "control": "slider",
+            "group": "Style"
+          },
+          "flag": "--stroke-width",
+          "default": 8,
+          "min": 0,
+          "max": 40,
+          "step": 1,
+          "hint": "Text border/stroke thickness (px).",
+          "help": "Outline thickness in px; 0 disables the stroke. Capped at the Python boundary."
+        },
+        {
           "key": "min_words",
           "type": "number",
           "arity": "value",
@@ -855,6 +955,106 @@
           "flag": "--karaoke",
           "default": false,
           "hint": "Active-word highlight."
+        },
+        {
+          "key": "font_family",
+          "type": "enum",
+          "arity": "value",
+          "control": "dropdown",
+          "ui": {
+            "label": "Font",
+            "control": "dropdown",
+            "group": "Style"
+          },
+          "flag": "--font-family",
+          "default": "Helvetica",
+          "options": [
+            "Archivo",
+            "Inter",
+            "IBM Plex Mono",
+            "Helvetica",
+            "Helvetica Neue",
+            "Arial",
+            "Arial Black",
+            "Avenir Next",
+            "Futura",
+            "Gill Sans",
+            "Impact",
+            "Verdana",
+            "Georgia",
+            "Times New Roman",
+            "Courier New",
+            "Menlo",
+            "Trebuchet MS"
+          ],
+          "hint": "Caption font family.",
+          "help": "The font the captions render in. Curated allowlist (the same set the pipeline accepts); Remotion falls back to Helvetica until font loading lands (INI-088 Phase 4)."
+        },
+        {
+          "key": "font_size",
+          "type": "number",
+          "arity": "value",
+          "control": "slider",
+          "ui": {
+            "label": "Font size (px)",
+            "control": "slider",
+            "group": "Style"
+          },
+          "flag": "--font-size",
+          "default": 96,
+          "min": 24,
+          "max": 240,
+          "step": 2,
+          "hint": "Caption font size (px at native height).",
+          "help": "Pixel size at the profile's native height (reels = 1920px tall). Capped to a legible range at the Python boundary."
+        },
+        {
+          "key": "fill_color",
+          "type": "string",
+          "arity": "value",
+          "control": "field",
+          "ui": {
+            "label": "Fill color",
+            "control": "field",
+            "group": "Style"
+          },
+          "flag": "--fill-color",
+          "default": "#FFFFFF",
+          "hint": "Text fill color (hex).",
+          "help": "Hex color of the caption text fill, e.g. #FFFFFF. A color-picker widget is deferred; enter hex for v1."
+        },
+        {
+          "key": "stroke_color",
+          "type": "string",
+          "arity": "value",
+          "control": "field",
+          "ui": {
+            "label": "Stroke color",
+            "control": "field",
+            "group": "Style"
+          },
+          "flag": "--stroke-color",
+          "default": "#000000",
+          "hint": "Text border/stroke color (hex).",
+          "help": "Hex color of the caption text outline, e.g. #000000."
+        },
+        {
+          "key": "stroke_width",
+          "type": "number",
+          "arity": "value",
+          "control": "slider",
+          "ui": {
+            "label": "Stroke width (px)",
+            "control": "slider",
+            "group": "Style"
+          },
+          "flag": "--stroke-width",
+          "default": 8,
+          "min": 0,
+          "max": 40,
+          "step": 1,
+          "hint": "Text border/stroke thickness (px).",
+          "help": "Outline thickness in px; 0 disables the stroke. Capped at the Python boundary."
         },
         {
           "key": "dry_run",

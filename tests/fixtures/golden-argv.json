@@ -198,6 +198,16 @@
         "--profile",
         "reels-9x16",
         "--karaoke",
+        "--font-family",
+        "Helvetica",
+        "--font-size",
+        "96",
+        "--fill-color",
+        "#FFFFFF",
+        "--stroke-color",
+        "#000000",
+        "--stroke-width",
+        "8",
         "--min-words",
         "1",
         "--max-words",
@@ -227,6 +237,16 @@
         "--identity",
         "sigil-zero",
         "--karaoke",
+        "--font-family",
+        "Helvetica",
+        "--font-size",
+        "96",
+        "--fill-color",
+        "#FFFFFF",
+        "--stroke-color",
+        "#000000",
+        "--stroke-width",
+        "8",
         "-o",
         "layers/captions.mov",
         "--safezone",
@@ -309,6 +329,82 @@
         "review/composite.mp4",
         "-o",
         "exports/capcut"
+      ]
+    },
+    {
+      "name": "caption_define_styled",
+      "task": "caption.define",
+      "form_values": {
+        "identity": "dyson-hope",
+        "font_family": "Inter",
+        "font_size": 120,
+        "fill_color": "#FF0000",
+        "stroke_color": "#101010",
+        "stroke_width": 12
+      },
+      "artifact_paths": {
+        "base": "work/base.mp4",
+        "caption.def": "work/captions.yml",
+        "safezone.def": "work/safezone.json"
+      },
+      "argv": [
+        "video-pipeline",
+        "captions",
+        "work/base.mp4",
+        "--identity",
+        "dyson-hope",
+        "--profile",
+        "reels-9x16",
+        "--font-family",
+        "Inter",
+        "--font-size",
+        "120",
+        "--fill-color",
+        "#FF0000",
+        "--stroke-color",
+        "#101010",
+        "--stroke-width",
+        "12",
+        "-o",
+        "work/captions.yml",
+        "--safezone",
+        "work/safezone.json"
+      ]
+    },
+    {
+      "name": "caption_render_styled",
+      "task": "caption.render",
+      "form_values": {
+        "identity": "sigil-zero",
+        "font_family": "IBM Plex Mono",
+        "font_size": 84,
+        "stroke_width": 0
+      },
+      "artifact_paths": {
+        "caption.def": "work/captions.yml",
+        "caption": "layers/captions.mov",
+        "safezone.def": "work/safezone.json"
+      },
+      "argv": [
+        "video-pipeline",
+        "captions-render",
+        "work/captions.yml",
+        "--identity",
+        "sigil-zero",
+        "--font-family",
+        "IBM Plex Mono",
+        "--font-size",
+        "84",
+        "--fill-color",
+        "#FFFFFF",
+        "--stroke-color",
+        "#000000",
+        "--stroke-width",
+        "0",
+        "-o",
+        "layers/captions.mov",
+        "--safezone",
+        "work/safezone.json"
       ]
     }
   ]
