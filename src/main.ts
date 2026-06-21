@@ -118,12 +118,17 @@ async function boot(): Promise<void> {
     }
     return true;
   }
+  // Run lifecycle: `running` gates the Run button; `pendingTasks` is the set of
+  // enabled tasks we're still waiting on (cleared by terminal task-status events).
+  let running = false;
+  let pendingTasks = new Set<string>();
+
   function updateRunEnabled(): void {
     // A real run also needs the pipeline executable set (in the Tauri app).
     const pipelineOk = !tauriAvailable() || !!store.getPipelinePath();
     const ok =
       lastPlanValid && requiredInputsSatisfied([...enabled]) && pipelineOk;
-    $<HTMLButtonElement>("#run-btn").disabled = !ok;
+    $<HTMLButtonElement>("#run-btn").disabled = running || !ok;
   }
 
   // Top-bar concurrency cap: a help trigger on its label (the stepper itself
@@ -345,6 +350,12 @@ async function boot(): Promise<void> {
       // A produced artifact may now exist — refresh available preview layers.
       void previewer.refresh(projectRoot());
     }
+    // A terminal state clears the task from the pending set; when the set empties
+    // the run is over (covers failures/blocks, which `done==total` would miss).
+    if (p.state !== "Running") {
+      pendingTasks.delete(p.taskId);
+      if (running && pendingTasks.size === 0) setRunning(false);
+    }
   });
   await ipc.listen<PlanProgressEvent>("plan-progress", (p) => {
     $("#run-progress").textContent =
@@ -369,6 +380,20 @@ async function boot(): Promise<void> {
 
   const runBtn = $<HTMLButtonElement>("#run-btn");
   const cancelBtn = $<HTMLButtonElement>("#cancel-btn");
+
+  // Toggle the running state: Run shows a spinner + "Running" and is disabled;
+  // Cancel is enabled only while a run is in flight.
+  function setRunning(on: boolean): void {
+    running = on;
+    cancelBtn.disabled = !on;
+    if (on) {
+      runBtn.disabled = true;
+      runBtn.innerHTML = `<span class="spinner" aria-hidden="true"></span>Running`;
+    } else {
+      runBtn.innerHTML = "▶ Run";
+      updateRunEnabled(); // restore the validity-gated enabled state
+    }
+  }
 
   runBtn.addEventListener("click", () => {
     void (async () => {
@@ -405,7 +430,9 @@ async function boot(): Promise<void> {
           pipelineCmd: store.getPipelinePath(),
         });
         $("#run-progress").textContent = `run ${runId}`;
-        cancelBtn.disabled = false;
+        // Wait on every enabled task; each emits a terminal status when done.
+        pendingTasks = new Set([...enabled]);
+        setRunning(true);
       } catch (err) {
         $("#run-progress").textContent = `error: ${String(err)}`;
       }
@@ -413,8 +440,8 @@ async function boot(): Promise<void> {
   });
 
   cancelBtn.addEventListener("click", () => {
-    // Cancel the currently selected task (per-task cancel is the IPC surface).
-    if (selectedTask) void ipc.cancelTask(selectedTask.id);
+    // Cancel the whole run: request cancellation of every task still pending.
+    for (const id of pendingTasks) void ipc.cancelTask(id);
   });
   cancelBtn.disabled = true;
 

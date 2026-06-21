@@ -21,6 +21,18 @@ import type { Artifact, Schema } from "./types";
 import { store } from "./state";
 import { artifactPathsFor } from "./command";
 import { bindLabelHelp, helpMarkup, type HelpPanel } from "./help";
+import { tauriAvailable } from "./dialog";
+
+// In the Tauri webview a <video> can't load a raw filesystem path — it needs an
+// asset-protocol URL. `convertFileSrc` produces one (identity in browser/mock).
+// Without this the element never loads, so transport never enables and the
+// duration stays 0:00. The asset scope + CSP already allow $HOME media.
+let toAssetUrl: (p: string) => string = (p) => p;
+const assetReady: Promise<void> = tauriAvailable()
+  ? import("@tauri-apps/api/core").then((m) => {
+      toAssetUrl = m.convertFileSrc;
+    })
+  : Promise.resolve();
 
 const PLAY_ICON =
   '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M4 2.5v11l9-5.5z"/></svg>';
@@ -240,7 +252,7 @@ export function mountPreviewer(
     };
 
     video.addEventListener("loadeddata", onLoaded);
-    video.src = src;
+    video.src = toAssetUrl(src);
     // Mark alpha layers so the backdrop reads through (checkerboard).
     host.classList.toggle(
       "previewer--alpha",
@@ -268,6 +280,7 @@ export function mountPreviewer(
 
   return {
     async refresh(projectRoot: string | undefined): Promise<void> {
+      await assetReady; // ensure convertFileSrc is loaded before any src swap
       const root = projectRoot ?? store.activeProjectRoot() ?? "";
       let present: string[] = [];
       try {

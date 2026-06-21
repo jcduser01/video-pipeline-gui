@@ -21,24 +21,30 @@
           <span id="engine-name" class="topbar__engine">—</span>
         </div>
         <div class="topbar__right">
-          <label class="topbar__cap" title="Maximum tasks run at once within a level">
-            <span id="cap-help">Parallel</span>
-            <select id="cap-input">
-              <option value="1">1 task</option>
-              <option value="2" selected>2 tasks</option>
-              <option value="3">3 tasks</option>
-              <option value="4">4 tasks</option>
-            </select>
-          </label>
-          <span id="run-progress" class="topbar__progress"></span>
-          <button id="run-btn" type="button" class="btn btn--run">▶ Run</button>
-          <button id="cancel-btn" type="button" class="btn btn--cancel">■ Cancel</button>
-          <button id="pipeline-btn" type="button" class="btn btn--ghost"
-                  title="Set the video-pipeline executable to run (so the app finds it regardless of how it was launched)">Pipeline…</button>
-          <button id="reset-btn" type="button" class="btn btn--ghost"
-                  title="Reset all fields, panels, and theme to defaults">Reset</button>
-          <button id="theme-toggle" type="button" class="btn btn--ghost btn--icon"
-                  title="Toggle light / dark" aria-label="Toggle theme"></button>
+          <div class="topbar__group">
+            <button id="run-btn" type="button" class="btn btn--run">▶ Run</button>
+            <button id="cancel-btn" type="button" class="btn btn--cancel">■ Cancel</button>
+          </div>
+          <div class="topbar__group">
+            <label class="topbar__cap" title="Maximum tasks run at once within a level">
+              <span id="cap-help">Parallel</span>
+              <select id="cap-input">
+                <option value="1">1 task</option>
+                <option value="2" selected>2 tasks</option>
+                <option value="3">3 tasks</option>
+                <option value="4">4 tasks</option>
+              </select>
+            </label>
+            <span id="run-progress" class="topbar__progress"></span>
+          </div>
+          <div class="topbar__group topbar__group--app">
+            <button id="pipeline-btn" type="button" class="btn btn--ghost"
+                    title="Set the video-pipeline executable to run (so the app finds it regardless of how it was launched)">Pipeline…</button>
+            <button id="reset-btn" type="button" class="btn btn--ghost"
+                    title="Reset all fields, panels, and theme to UI defaults">Reset UI</button>
+            <button id="theme-toggle" type="button" class="btn btn--ghost btn--icon"
+                    title="Toggle light / dark" aria-label="Toggle theme"></button>
+          </div>
         </div>
       </header>
 
