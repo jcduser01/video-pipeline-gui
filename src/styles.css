@@ -245,6 +245,41 @@ code, .mono { font-family: var(--mono); }
   font-size: 12px; line-height: 1; flex: 0 0 auto;
 }
 
+/* ---------- output / packaging section (left pane) ---------- */
+.packaging { padding: 8px 0 4px; }
+.packaging__head {
+  margin: 4px 12px 8px 16px; font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.6px; color: var(--text-dim); font-weight: 700;
+  border-top: 1px solid var(--border); padding-top: 12px;
+}
+.packaging__empty { margin: 0 16px; font-size: 11px; color: var(--text-faint); }
+.packaging__card {
+  margin: 0 10px 8px; padding: 8px 10px;
+  border: 1px solid var(--border); border-radius: 7px; background: var(--bg-raised);
+}
+.packaging__label { font-size: 12.5px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.packaging__params { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }
+.packaging__field {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: 11px; color: var(--text-dim);
+}
+.packaging__input {
+  width: 90px; background: var(--bg-sunken); border: 1px solid var(--border);
+  color: var(--text); border-radius: 4px; padding: 2px 6px; font-size: 12px;
+}
+.packaging__cmd {
+  display: block; font-family: var(--mono); font-size: 10.5px; line-height: 1.45;
+  color: var(--text-dim); background: var(--bg-sunken); border: 1px solid var(--border);
+  border-radius: 4px; padding: 5px 6px; margin-bottom: 6px;
+  white-space: pre-wrap; word-break: break-all;
+}
+.packaging__copy {
+  font-size: 11px; padding: 2px 8px; cursor: pointer;
+  background: var(--bg-sunken); border: 1px solid var(--border);
+  color: var(--text); border-radius: 4px;
+}
+.packaging__copy:hover { border-color: var(--accent); color: var(--accent); }
+
 /* ---------- center stack ---------- */
 /* Rows: form (flex) · resolved command (docked, auto) · resize handle · run
    output (--log-h, collapsible). The explicit single column with a 0 minimum

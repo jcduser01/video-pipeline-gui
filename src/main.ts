@@ -21,6 +21,7 @@ import { renderForm } from "./forms";
 import { mountCommandPreview } from "./command";
 import { mountLog } from "./log";
 import { mountPreviewer } from "./previewer";
+import { mountPackaging } from "./packaging";
 import { setupDragDrop } from "./dnd";
 import { confirmDialog, pickPath, tauriAvailable } from "./dialog";
 import { bindLabelHelp, helpMarkup, type HelpPanel } from "./help";
@@ -70,6 +71,10 @@ async function boot(): Promise<void> {
   const cmdPreview = mountCommandPreview($("#cmd-bar"), schema);
   const logView = mountLog($("#log-view"));
   const previewer = mountPreviewer($("#previewer"), schema, help);
+  const packaging = mountPackaging($("#packaging"), schema, {
+    projectRoot: () => store.projectRoot(),
+    pipelineCmd: () => store.getPipelinePath(),
+  });
 
   // ---- invalid-selection warning banner (replaces the plan panel) ----
   const banner = $("#banner");
@@ -171,6 +176,7 @@ async function boot(): Promise<void> {
     refreshCommand();
     updateRunEnabled();
     refreshConflicts();
+    packaging.refresh();
   };
 
   // Mark pipeline-tree rows whose shared fields conflict with the first step, so a
@@ -428,6 +434,7 @@ async function boot(): Promise<void> {
     pipelineBtn.title = p
       ? `Pipeline executable:\n${p}\n\nClick to change.`
       : "Set the video-pipeline executable to run (required before a run).";
+    packaging.refresh();
   };
   reflectPipeline();
   pipelineBtn.addEventListener("click", () => {
