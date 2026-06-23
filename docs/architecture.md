@@ -87,7 +87,12 @@ sources are the schema's previewable artifacts intersected with the files presen
 disk: the form shows capability, the previewer shows produced reality. Playhead and
 play-state are preserved across swaps, so switching layers feels like flipping
 channels on one timeline. The one webview-dependent case — previewing a transparent
-layer in isolation — is de-risked separately (see `alpha-spike.md`).
+layer in isolation — was designed around rather than bet on: the pipeline bakes each
+transparent layer over a checkerboard into an opaque **h264 proxy** (`proxy` step →
+`*.preview.mp4`), and the alpha `.mov` layers are marked non-previewable. The
+previewer therefore only ever plays opaque h264 and never depends on webview alpha
+decoding. (The original `alpha-spike.md` de-risk, now superseded, is kept for
+history.)
 
 ## Shell decision
 
