@@ -54,6 +54,7 @@
       "name": "safezone_gen",
       "task": "safezone.gen",
       "form_values": {
+        "mode": "custom",
         "template": "design/template.png",
         "key": "alpha"
       },
@@ -64,6 +65,8 @@
         "video-pipeline",
         "safezone-gen",
         "design/template.png",
+        "--mode",
+        "custom",
         "--key",
         "alpha",
         "-o",
@@ -94,6 +97,8 @@
         "dynamic",
         "--tracker",
         "mediapipe",
+        "--lock",
+        "none",
         "-o",
         "work/base.mp4",
         "--reframed-out",
@@ -125,6 +130,8 @@
         "static",
         "--tracker",
         "opencv",
+        "--lock",
+        "none",
         "--dry-run",
         "-o",
         "work/base.mp4",
@@ -629,6 +636,90 @@
         "kind=video;src=b.mov;at=the demo;placement=pip-rect;rect=60,1180,420,560;audio=duck",
         "-o",
         "work/overlay.def.yml"
+      ]
+    },
+    {
+      "name": "safezone_gen_generic",
+      "task": "safezone.gen",
+      "form_values": {
+        "mode": "generic",
+        "aspect": "full-portrait"
+      },
+      "artifact_paths": {
+        "safezone.def": "work/safezone.json"
+      },
+      "argv": [
+        "video-pipeline",
+        "safezone-gen",
+        "--mode",
+        "generic",
+        "--key",
+        "auto",
+        "-o",
+        "work/safezone.json"
+      ]
+    },
+    {
+      "name": "safezone_gen_none",
+      "task": "safezone.gen",
+      "form_values": {
+        "mode": "none",
+        "aspect": "square"
+      },
+      "artifact_paths": {
+        "safezone.def": "work/safezone.json"
+      },
+      "argv": [
+        "video-pipeline",
+        "safezone-gen",
+        "--mode",
+        "none",
+        "--key",
+        "auto",
+        "-o",
+        "work/safezone.json"
+      ]
+    },
+    {
+      "name": "reframe_locked_punchin",
+      "task": "reframe",
+      "form_values": {
+        "scale": 1.3,
+        "pan_x": 0.25,
+        "pan_y": 0.6,
+        "lock": "both"
+      },
+      "artifact_paths": {
+        "base": "work/base.mp4",
+        "reframed": "work/reframed.mp4",
+        "subject.occupancy": "work/reframe.occupancy.json"
+      },
+      "argv": [
+        "video-pipeline",
+        "reframe",
+        "work/base.mp4",
+        "--aspect",
+        "full-portrait",
+        "--resolution",
+        "auto",
+        "--mode",
+        "static",
+        "--tracker",
+        "opencv",
+        "--scale",
+        "1.3",
+        "--pan-x",
+        "0.25",
+        "--pan-y",
+        "0.6",
+        "--lock",
+        "both",
+        "-o",
+        "work/base.mp4",
+        "--reframed-out",
+        "work/reframed.mp4",
+        "--occupancy-out",
+        "work/reframe.occupancy.json"
       ]
     }
   ]

@@ -263,18 +263,42 @@
       ],
       "params": [
         {
+          "key": "mode",
+          "type": "enum",
+          "arity": "value",
+          "control": "dropdown",
+          "ui": {
+            "label": "Safe-zone mode",
+            "control": "dropdown",
+            "group": "Mode"
+          },
+          "flag": "--mode",
+          "default": "generic",
+          "options": [
+            "none",
+            "generic",
+            "custom"
+          ],
+          "hint": "Safe-zone mode.",
+          "help": "none = the full frame is safe; generic = per-aspect conservative inset rectangle (the default); custom = trace a template PNG for the exact destination. Generic social safe zones are conservative estimates. For platform-specific publishing, use a safe-zone template for the exact destination platform and placement.",
+          "example": "--mode generic"
+        },
+        {
           "key": "template",
           "type": "path",
           "arity": "positional",
           "control": "picker",
           "ui": {
             "label": "Template PNG",
-            "group": "Input"
+            "group": "Input",
+            "depends_on": {
+              "key": "mode",
+              "equals": "custom"
+            }
           },
           "order": 0,
-          "required": true,
-          "hint": "Template PNG with the danger region marked.",
-          "help": "The design template image. The marked region becomes the danger polygon (notch-aware).",
+          "hint": "Template PNG with the danger region marked (custom mode).",
+          "help": "The design template image (custom mode only). The marked region becomes the danger polygon (notch-aware).",
           "example": "template.png",
           "path": {
             "kind": "file",
@@ -316,7 +340,11 @@
           "ui": {
             "label": "Region key",
             "control": "dropdown",
-            "group": "Input"
+            "group": "Input",
+            "depends_on": {
+              "key": "mode",
+              "equals": "custom"
+            }
           },
           "flag": "--key",
           "default": "auto",
@@ -325,12 +353,12 @@
             "alpha",
             "color"
           ],
-          "hint": "How the danger region is marked.",
+          "hint": "How the danger region is marked (custom mode).",
           "help": "auto detects alpha vs a key color; force alpha or color if detection guesses wrong."
         }
       ],
-      "hint": "Derive the safe-zone polygon from a template PNG.",
-      "help": "Reads a design template where the danger region is marked (by alpha or by a key color) and emits the safe-zone spec JSON consumed downstream."
+      "hint": "Derive the safe-zone spec (none / generic / custom).",
+      "help": "Builds the safe-zone spec consumed downstream. INI-091 modes: none (full frame is safe), generic (per-aspect conservative insets, the default), or custom (trace a design template PNG where the danger region is marked by alpha or a key color)."
     },
     {
       "id": "reframe",
@@ -512,6 +540,62 @@
           "step": 0.05,
           "hint": "Vertical anchor override (optional, bipolar).",
           "help": "Where the subject sits vertically: -1 = top, 0 = centred, +1 = bottom. Only bites when there is vertical slack (punched in, or a source taller than the target). Unset = let Framing decide."
+        },
+        {
+          "key": "pan_x",
+          "type": "number",
+          "arity": "value",
+          "control": "slider",
+          "ui": {
+            "label": "Pan X",
+            "control": "slider",
+            "group": "Framing"
+          },
+          "flag": "--pan-x",
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01,
+          "hint": "Set-box horizontal anchor (0..1).",
+          "help": "Where the crop window sits horizontally: 0 = hard left, 0.5 = centred, 1 = hard right. The set-box placement the composition lock holds on the X axis. Unset = let the tracker decide."
+        },
+        {
+          "key": "pan_y",
+          "type": "number",
+          "arity": "value",
+          "control": "slider",
+          "ui": {
+            "label": "Pan Y",
+            "control": "slider",
+            "group": "Framing"
+          },
+          "flag": "--pan-y",
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01,
+          "hint": "Set-box vertical anchor (0..1).",
+          "help": "Where the crop window sits vertically: 0 = top, 0.5 = centred, 1 = bottom. The set-box placement the composition lock holds on the Y axis. Unset = let the tracker decide."
+        },
+        {
+          "key": "lock",
+          "type": "enum",
+          "arity": "value",
+          "control": "dropdown",
+          "ui": {
+            "label": "Composition lock",
+            "control": "dropdown",
+            "group": "Framing"
+          },
+          "flag": "--lock",
+          "default": "none",
+          "options": [
+            "none",
+            "x",
+            "y",
+            "both"
+          ],
+          "hint": "Composition lock axis.",
+          "help": "Hold the set-box on the given axis instead of following the subject: none = follow (default), x = hold horizontal, y = hold vertical, both = a fully static composed crop.",
+          "example": "--lock both"
         },
         {
           "key": "dry_run",
